@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChopChopin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap"/>
+  <link rel="stylesheet" href="../css/style-a.css"/>
+  <style>
+    /* ── Save Audio Box ── */
+    #save-audio-box { display:none; margin-top:16px; }
+
+    /* ── Rec Timer ── */
+    #rec-timer { font-size:.75rem; color:#ff4444; margin-left:8px; font-family:'Orbitron',sans-serif; }
+
+    /* ── Profile Modal Overrides ── */
+    .modal { max-width:680px; width:94vw; max-height:85vh; overflow-y:auto; }
+    .p-header { display:flex; align-items:center; gap:16px; padding:8px 0 18px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:18px; }
+    .p-avatar { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#5865f2,#00d4ff); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:#fff; font-weight:700; flex-shrink:0; }
+    .p-info { display:flex; flex-direction:column; gap:4px; }
+    .p-pseudo { font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; color:#e8eaf6; }
+    .p-email-disp { font-size:.8rem; color:#7c83ad; }
+    .p-section { margin-top:18px; }
+    .p-section-title { font-size:.65rem; font-weight:700; letter-spacing:.12em; color:#5865f2; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(88,101,242,.25); }
+    .profile-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); margin-bottom:8px; transition:background .15s; }
+    .profile-item:hover { background:rgba(88,101,242,.12); }
+    .profile-item-info { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+    .profile-item-titre { font-size:.88rem; font-weight:600; color:#c8ceff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .profile-item-meta { font-size:.72rem; color:#7c83ad; }
+    .profile-item-notes { font-size:.72rem; color:#5a6080; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .profile-item-actions { display:flex; gap:6px; flex-shrink:0; }
+    .profile-item-actions button { padding:4px 10px; border-radius:5px; border:1px solid rgba(88,101,242,.4); background:rgba(88,101,242,.15); color:#a0a8f8; font-size:.72rem; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .profile-item-actions button:hover { background:rgba(88,101,242,.35); color:#fff; }
+    .profile-item-actions .btn-del-morceau, .profile-item-actions .btn-del-son { border-color:rgba(255,60,60,.3); background:rgba(255,60,60,.1); color:#f47; }
+    .profile-item-actions .btn-del-morceau:hover, .profile-item-actions .btn-del-son:hover { background:rgba(255,60,60,.3); color:#fff; }
+    .p-loading, .p-empty { font-size:.8rem; color:#5a6080; padding:8px 0; }
+    .p-tabs { display:flex; gap:0; margin-bottom:16px; border-radius:8px; overflow:hidden; border:1px solid rgba(88,101,242,.3); }
+    .p-tab { flex:1; padding:8px; text-align:center; font-size:.78rem; font-weight:600; cursor:pointer; background:rgba(255,255,255,.03); color:#7c83ad; transition:all .15s; border:none; font-family:'Rajdhani',sans-serif; letter-spacing:.05em; text-transform:uppercase; }
+    .p-tab.active { background:rgba(88,101,242,.25); color:#a0a8f8; }
+    .p-tab-content { display:none; }
+    .p-tab-content.active { display:block; }
+  </style>
+</head>
+<body>
+
+  <div id="loading">
+    <div class="spin"></div>
+    <p>Initialisation…</p>
+  </div>
+
+  <div id="overlay">
+    <div id="logo">
+      <span class="ico">♪</span>
+      <span class="cho">Cho</span><span class="chopin">Chopin</span>
+    </div>
+    <nav id="nav">
+      <button class="nav-btn" id="btn-profile">Profil</button>
+      <div class="nav-sep"></div>
+      <button class="nav-btn" id="btn-record">
+        <span id="rec-dot"></span>Enregistrer
+      </button>
+      <span id="rec-timer"></span>
+      <button class="nav-btn" id="btn-save">Sauvegarder</button>
+      <div class="nav-sep"></div>
+      <button class="nav-btn danger" id="btn-logout">Déconnexion</button>
+    </nav>
+  </div>
+
+  <div id="main">
+    <div id="panel-piano">
+      <p class="panel-title">Piano</p>
+      <div id="cabinet">
+        <div id="felt"></div>
+        <div id="keys"></div>
+      </div>
+      <div id="piano-status">SYS:READY · OCT 4-5-6</div>
+    </div>
+
+    <div class="h-sep"></div>
+
+    <div id="panel-reader">
+      <div class="reader-box">
+        <h2>Partition Textuelle</h2>
+        <textarea id="notes-input" placeholder="do re mi fa sol la si · séparés par espace ou virgule"></textarea>
+        <div id="seq-display"></div>
+        <div class="reader-opts">
+          <label>Tempo</label>
+          <input type="range" id="tempo-val" min="40" max="240" value="90"/>
+          <span id="tempo-label">90 bpm</span>
+          <label>Octave</label>
+          <select id="octave-sel">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+        <div class="reader-controls">
+          <button class="ctrl-btn" id="btn-play-notes">▶ Jouer</button>
+          <button class="ctrl-btn stop-btn" id="btn-stop-notes" disabled>■ Stop</button>
+        </div>
+      </div>
+
+      <!-- Sauvegarder Morceau (notes texte) -->
+      <div class="reader-box" id="save-box">
+        <h2>Sauvegarder Morceau</h2>
+        <div class="save-fields">
+          <input type="text" id="save-titre" placeholder="Titre du morceau"/>
+        </div>
+        <div class="save-fields">
+          <select id="save-access">
+            <option value="publique">Publique</option>
+            <option value="privée">Privée</option>
+          </select>
+          <input type="number" id="save-vitesse" placeholder="Vitesse bpm" min="20" max="300" value="90"/>
+        </div>
+        <button id="btn-do-save">[ Sauvegarder les notes ]</button>
+      </div>
+
+      <!-- Sauvegarder Son enregistré -->
+      <div class="reader-box" id="save-audio-box">
+        <h2>Sauvegarder l'Enregistrement</h2>
+        <div class="save-fields">
+          <input type="text" id="save-audio-titre" placeholder="Nom du son"/>
+        </div>
+        <div class="save-fields">
+          <select id="save-audio-access">
+            <option value="publique">Publique</option>
+            <option value="privée">Privée</option>
+          </select>
+        </div>
+        <button id="btn-do-save-audio">[ Sauvegarder le son ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Profil -->
+  <div class="modal-bg" id="modal-profile">
+    <div class="modal">
+      <h2>Profil</h2>
+      <div class="p-header">
+        <div class="p-avatar" id="p-avatar">?</div>
+        <div class="p-info">
+          <span class="p-pseudo" id="p-pseudo">—</span>
+          <span class="p-email-disp" id="p-email-disp">—</span>
+        </div>
+      </div>
+
+      <div class="p-tabs">
+        <button class="p-tab active" data-tab="morceaux">🎵 Morceaux</button>
+        <button class="p-tab" data-tab="sons">🎙 Sons enregistrés</button>
+      </div>
+
+      <div class="p-tab-content active" id="tab-morceaux">
+        <div class="p-section">
+          <div class="p-section-title">Mes partitions sauvegardées</div>
+          <div id="profile-morceaux-list"></div>
+        </div>
+      </div>
+
+      <div class="p-tab-content" id="tab-sons">
+        <div class="p-section">
+          <div class="p-section-title">Mes sons enregistrés</div>
+          <div id="profile-sons-list"></div>
+        </div>
+      </div>
+
+      <button class="modal-close" id="modal-close-btn">Fermer</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="../js/piano.js"></script>
+  <script>
+    // Tabs profil
+    document.querySelectorAll('.p-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.p-tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.p-tab-content').forEach(c=>c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+      });
+    });
+    // Avatar initial
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const user = JSON.parse(sessionStorage.getItem('utilisateurConnecte')||'{}');
+      if(user.pseudo) document.getElementById('p-avatar').textContent = user.pseudo[0].toUpperCase();
+    });
+  </script>
+</body>
+</html>
